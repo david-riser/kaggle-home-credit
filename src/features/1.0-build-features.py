@@ -139,8 +139,8 @@ def process_bureau(path_to_data='', sample_size=1000):
     start_time = time.time()
 
     # Load data and encode.
-    bureau_data = pd.reac_csv(path_to_data + 'bureau.csv', nrows=sample_size)
-    bureau_balance_data = pd.reac_csv(path_to_data + 'bureau_balance.csv', nrows=sample_size)
+    bureau_data = pd.read_csv(path_to_data + 'bureau.csv', nrows=sample_size)
+    bureau_balance_data = pd.read_csv(path_to_data + 'bureau_balance.csv', nrows=sample_size)
     encode_categoricals(bureau_data)
     encode_categoricals(bureau_balance_data)
 
@@ -155,14 +155,14 @@ def process_bureau(path_to_data='', sample_size=1000):
     bureau_aggregated.columns = [rename_column('BUREAU', col[0], col[1])
                                   for col in list(bureau_aggregated.columns)]
 
-    bureau_balance_aggregated = bureau_balance_data.groupby('SK_ID_CURR').aggregate(
+    bureau_balance_aggregated = bureau_balance_data.groupby('SK_ID_BUREAU').aggregate(
         ['min', 'max', 'mean', 'var','nunique']
     )
     bureau_balance_aggregated.columns = [rename_column('BUREAU_BALANCE', col[0], col[1])
                                   for col in list(bureau_balance_aggregated.columns)]
 
     # Join tables
-    data = bureau_aggregated.join(bureau_balance_aggregated, how='left', on='SK_ID_CURR')
+    data = bureau_aggregated.join(bureau_balance_aggregated, how='left')
 
     runtime = time.time() - start_time
     log.info('Bureau data processed in %s seconds.', runtime)
@@ -173,7 +173,7 @@ def process_bureau(path_to_data='', sample_size=1000):
 ###################################################
 
 # Setup logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__file__)
 
 # Constants for loading of data.
@@ -184,7 +184,7 @@ path_to_output = '../../data/processed/'
 app = process_application(path_to_data, sample_size)
 installment = process_installment(path_to_data, sample_size)
 credit_card = process_creditcard(path_to_data, sample_size)
-bureau = process_creditcard(path_to_data, sample_size)
+bureau = process_bureau(path_to_data, sample_size)
 
 # Create merged table
 dataset = app.join(installment, how='left', on='SK_ID_CURR')
