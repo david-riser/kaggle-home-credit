@@ -1,7 +1,7 @@
 #
 # 1.0-build-features.py
 # Author: David Riser
-# Data: Jun. 27, 2018
+# Date: Jun. 27, 2018
 #
 # Template for aggregating data from all tables provided
 # as part of this kaggle challenge, and saving the processed
@@ -13,25 +13,32 @@ import numpy as np
 import pandas as pd
 import time
 
+from contextlib import contextmanager
 from sklearn.preprocessing import LabelEncoder
+
+# Taken from https://www.kaggle.com/jsaguiar/updated-0-792-lb-lightgbm-with-simple-features/code
+# and modified to log instead of print. 
+@contextmanager
+def timer(title):
+    t0 = time.time()
+    yield
+    log.info("{} - done in {:.0f}s".format(title, time.time() - t0))
 
 def rename_column(table_name, variable, aggregation):
     '''
+    Naming scheme for the columns is all caps and
+    has the format. 
 
-    :param table_name: Name of table passed
-    :param variable: Name of variable being aggregated
-    :param aggregation: Name of aggregation method
-    :return: string with new column name
+    (DATA_SOURCE)_(VARIABLE)_(AGGREGATION_TYPE)
     '''
     return table_name + '_' + variable + '_' + aggregation.upper()
 
 def encode_categoricals(data):
     '''
-
-    :param data: A pandas dataframe that contains categorical variables.
+    Take a dataframe and label encode all categorical 
+    variables inplace. 
     '''
     cat_cols = data.select_dtypes('object').columns
-
     for cat in cat_cols:
         encoder = LabelEncoder()
         data[cat] = encoder.fit_transform(data[cat])
@@ -41,8 +48,6 @@ def process_application(path_to_data='', sample_size=1000):
     Load and process the main dataset.  Merge the test and
     training samples together using the dummy variable test.
     '''
-
-    start_time = time.time()
 
     # Read application data, this is the main dataset.
     app_train = pd.read_csv(path_to_data + 'application_train.csv', nrows=sample_size)
@@ -58,16 +63,12 @@ def process_application(path_to_data='', sample_size=1000):
     # Perform label encoding on categorical variables.
     encode_categoricals(app)
 
-    runtime = time.time() - start_time
-    log.info('Application data processed in %s seconds.', runtime)
     return app
 
 def process_installment(path_to_data='', sample_size=1000):
     '''
     Process installments dataset.
     '''
-
-    start_time = time.time()
 
     # Read supplementary tables
     install_data = pd.read_csv(path_to_data + 'installments_payments.csv', nrows=sample_size)
@@ -94,16 +95,12 @@ def process_installment(path_to_data='', sample_size=1000):
 
     log.debug('Aggregated installment dataframe has columns %s', install_aggregated.columns)
 
-    runtime = time.time() - start_time
-    log.info('Application data processed in %s seconds.', runtime)
     return install_aggregated
 
 def process_creditcard(path_to_data='', sample_size=1000):
     '''
     Process credit card dataset.
     '''
-
-    start_time = time.time()
 
     # Load and encode.
     credit_card_data = pd.read_csv(path_to_data + 'credit_card_balance.csv', nrows=sample_size)
@@ -127,16 +124,12 @@ def process_creditcard(path_to_data='', sample_size=1000):
     credit_card_aggregated['CREDIT_CARD_COUNT'] = credit_card_data.groupby('SK_ID_CURR').size()
     log.debug('Aggregated credit card dataframe has columns %s', credit_card_aggregated.columns)
 
-    runtime = time.time() - start_time
-    log.info('Credit card data processed in %s seconds.', runtime)
     return credit_card_aggregated
 
 def process_bureau(path_to_data='', sample_size=1000):
     '''
     Process both bureau and bureau balance datasets.
     '''
-
-    start_time = time.time()
 
     # Load data and encode.
     bureau_data = pd.read_csv(path_to_data + 'bureau.csv', nrows=sample_size)
@@ -164,8 +157,6 @@ def process_bureau(path_to_data='', sample_size=1000):
     # Join tables
     data = bureau_aggregated.join(bureau_balance_aggregated, how='left')
 
-    runtime = time.time() - start_time
-    log.info('Bureau data processed in %s seconds.', runtime)
     return data
 
 ###################################################
@@ -177,14 +168,21 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__file__)
 
 # Constants for loading of data.
-sample_size = 5000
+sample_size = None
 path_to_data = '../../data/raw/'
 path_to_output = '../../data/processed/'
 
-app = process_application(path_to_data, sample_size)
-installment = process_installment(path_to_data, sample_size)
-credit_card = process_creditcard(path_to_data, sample_size)
-bureau = process_bureau(path_to_data, sample_size)
+with timer('Processing application testing/training'):
+    app = process_application(path_to_data, sample_size)
+
+with timer('Processing installment dataset'):
+    installment = process_installment(path_to_data, sample_size)
+
+with timer('Processing credit card dataset'):
+    credit_card = process_creditcard(path_to_data, sample_size)
+
+with timer('Processing bureau datasets'):
+    bureau = process_bureau(path_to_data, sample_size)
 
 # Create merged table
 dataset = app.join(installment, how='left', on='SK_ID_CURR')
