@@ -250,7 +250,8 @@ def build_features():
     log.info('Added previous data with shape %s', dataset.shape)
 
     # Save compressed version of aggregated dataset.
-    dataset.to_csv(path_to_output + '1.0-features.csv', compression='gzip')
+    with timer('Finishing and writing to file'):
+        dataset.to_csv(path_to_output + '1.0-features.csv', compression='gzip')
 
 if __name__ == '__main__':
     build_features()
