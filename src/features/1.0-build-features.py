@@ -18,6 +18,11 @@ from sklearn.preprocessing import LabelEncoder
 
 # Taken from https://www.kaggle.com/jsaguiar/updated-0-792-lb-lightgbm-with-simple-features/code
 # and modified to log instead of print. 
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__file__)
+
 @contextmanager
 def timer(title):
     t0 = time.time()
@@ -146,7 +151,7 @@ def process_bureau(path_to_data='', sample_size=1000):
     )
 
     bureau_aggregated.columns = [rename_column('BUREAU', col[0], col[1])
-                                  for col in list(bureau_aggregated.columns)]
+                                 for col in list(bureau_aggregated.columns)]
 
     bureau_balance_aggregated = bureau_balance_data.groupby('SK_ID_BUREAU').aggregate(
         ['min', 'max', 'mean', 'var','nunique']
@@ -159,40 +164,93 @@ def process_bureau(path_to_data='', sample_size=1000):
 
     return data
 
+def process_cash(path_to_data='', sample_size=1000):
+    '''
+    Processing cash dataset and making aggregations.
+    '''
+
+    cash_data = pd.read_csv(path_to_data + 'POS_CASH_balance.csv', nrows=sample_size)
+    encode_categoricals(cash_data)
+
+    # Add features here, then aggregate.
+    cash_aggregated = cash_data.groupby('SK_ID_CURR').aggregate(
+        ['min', 'max', 'mean', 'var']
+    )
+
+    # Fix naming
+    cash_aggregated.columns = [rename_column('CASH', col[0], col[1])
+                                 for col in list(cash_aggregated.columns)]
+    log.debug('Aggregated cash dataframe has columns %s', cash_aggregated.columns)
+    return cash_aggregated
+
+def process_previous(path_to_data='', sample_size=1000):
+    '''
+    Processing cash dataset and making aggregations.
+    '''
+
+    previous_data = pd.read_csv(path_to_data + 'previous_application.csv', nrows=sample_size)
+    encode_categoricals(previous_data)
+
+    # Add features here.
+
+    # Perform aggregations
+    previous_aggregated = previous_data.groupby('SK_ID_CURR').aggregate(
+        ['min', 'max', 'mean', 'var']
+    )
+
+    # Fix naming
+    previous_aggregated.columns = [rename_column('PREV', col[0], col[1])
+                                 for col in list(previous_aggregated.columns)]
+    log.debug('Aggregated previous dataframe has columns %s', previous_aggregated.columns)
+    return previous_aggregated
+
+
 ###################################################
-###################################################
-###################################################
+def build_features():
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger(__file__)
+    # Constants for loading of data.
+    # Placing None as the sample size
+    # will run the complete dataset.
+    sample_size    = None
+    path_to_data   = '../../data/raw/'
+    path_to_output = '../../data/processed/'
 
-# Constants for loading of data.
-sample_size = None
-path_to_data = '../../data/raw/'
-path_to_output = '../../data/processed/'
+    with timer('Processing application testing/training'):
+        app = process_application(path_to_data, sample_size)
 
-with timer('Processing application testing/training'):
-    app = process_application(path_to_data, sample_size)
+    with timer('Processing installment dataset'):
+        installment = process_installment(path_to_data, sample_size)
 
-with timer('Processing installment dataset'):
-    installment = process_installment(path_to_data, sample_size)
+    with timer('Processing credit card dataset'):
+        credit_card = process_creditcard(path_to_data, sample_size)
 
-with timer('Processing credit card dataset'):
-    credit_card = process_creditcard(path_to_data, sample_size)
+    with timer('Processing bureau datasets'):
+        bureau = process_bureau(path_to_data, sample_size)
 
-with timer('Processing bureau datasets'):
-    bureau = process_bureau(path_to_data, sample_size)
+    with timer('Processing cash dataset'):
+        cash = process_cash(path_to_data, sample_size)
 
-# Create merged table
-dataset = app.join(installment, how='left', on='SK_ID_CURR')
-log.info('Added installment data with shape %s', dataset.shape)
+    with timer('Processing previous dataset'):
+        previous = process_previous(path_to_data, sample_size)
 
-dataset = dataset.join(credit_card, how='left', on='SK_ID_CURR')
-log.info('Added credit card data with shape %s', dataset.shape)
+    # Create merged table
+    dataset = app.join(installment, how='left', on='SK_ID_CURR')
+    log.info('Added installment data with shape %s', dataset.shape)
 
-dataset = dataset.join(bureau, how='left', on='SK_ID_CURR')
-log.info('Added bureau data with shape %s', dataset.shape)
+    dataset = dataset.join(credit_card, how='left', on='SK_ID_CURR')
+    log.info('Added credit card data with shape %s', dataset.shape)
 
-# Save compressed version of aggregated dataset.
-dataset.to_csv(path_to_output + '1.0-features.csv', compression='gzip')
+    dataset = dataset.join(bureau, how='left', on='SK_ID_CURR')
+    log.info('Added bureau data with shape %s', dataset.shape)
+
+    dataset = dataset.join(cash, how='left', on='SK_ID_CURR')
+    log.info('Added cash data with shape %s', dataset.shape)
+
+    dataset = dataset.join(previous,how='left', on='SK_ID_CURR')
+    log.info('Added previous data with shape %s', dataset.shape)
+
+    # Save compressed version of aggregated dataset.
+    dataset.to_csv(path_to_output + '1.0-features.csv', compression='gzip')
+
+if __name__ == '__main__':
+    build_features()
