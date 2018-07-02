@@ -60,8 +60,8 @@ def process_application(path_to_data='', sample_size=1000):
     log.info('Read application testing table with shape %s', app_train.shape)
 
     # Concatenate training and testing data, after providing a dummy label.
-    app_train['test'] = np.repeat(0, len(app_train))
-    app_test['test'] = np.repeat(1, len(app_test))
+    app_train['test'] = np.repeat(0, len(app_train), dtype=np.int32)
+    app_test['test']  = np.repeat(1, len(app_test), dtype=np.int32)
     app = pd.concat(list([app_train, app_test]), axis=0)
     log.info('Concatenated training/testing data with shape %s', app.shape)
 

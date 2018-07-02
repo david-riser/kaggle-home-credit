@@ -23,10 +23,12 @@ def main():
     # Load both training and testing
     data = pd.read_csv(path_to_data + '1.0-features.csv', nrows=sample_size, compression='gzip')
 
+    print(data.test.describe())
+    
     # Split into training and testing
     # and remove data.
-    train = data.loc[data.test == 0]
-#    test  = data.loc[data.test == 1]
+    train = data[data.test == 0]
+    test  = data[data.test == 1]
     del data
 
     
@@ -36,17 +38,19 @@ def main():
     features.remove('SK_ID_CURR')
     features.remove('TARGET')
 
-    # Impute missing values
+    # Impute missing values.  This 
+    # will transform our dataframe
+    # to numpy.ndarray. 
     imp   = Imputer()
-    train = imp.fit_transform(train)
-#    test  = imp.fit_transform(test)
+    train = imp.fit_transform(train[features])
+    test  = imp.fit_transform(test[features])
 
     # Setup kfolds and train.
     kf = KFold(n_splits=5, random_state=SEED)
     for train_index, val_index in kf.split(train):
         print('Training...')
-        rf = RandomForestClassifier()
-        rf.fit(train[features].iloc[train_index], train.TARGET.iloc[train_index])
+        #        rf = RandomForestClassifier()
+        #        rf.fit(train[features].iloc[train_index], train.TARGET.iloc[train_index])
 
 
 
