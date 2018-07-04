@@ -60,8 +60,8 @@ def process_application(path_to_data='', sample_size=1000):
     log.info('Read application testing table with shape %s', app_train.shape)
 
     # Concatenate training and testing data, after providing a dummy label.
-    app_train['test'] = np.repeat(0, len(app_train), dtype=np.int32)
-    app_test['test']  = np.repeat(1, len(app_test), dtype=np.int32)
+    app_train['test'] = np.repeat(0, len(app_train))
+    app_test['test']  = np.repeat(1, len(app_test))
     app = pd.concat(list([app_train, app_test]), axis=0)
     log.info('Concatenated training/testing data with shape %s', app.shape)
 
@@ -249,9 +249,17 @@ def build_features():
     dataset = dataset.join(previous,how='left', on='SK_ID_CURR')
     log.info('Added previous data with shape %s', dataset.shape)
 
-    # Save compressed version of aggregated dataset.
-    with timer('Finishing and writing to file'):
-        dataset.to_csv(path_to_output + '1.0-features.csv', compression='gzip')
+    # Sometimes this number is used to represent NaN
+    dataset.replace(365243, np.nan, inplace= True)
+
+    # Save compressed testing and training set. 
+    with timer('Writing training data'):
+        train = dataset.loc[dataset.test == 0]
+        train.to_csv(path_to_output + '1.0-features-train.csv', compression='gzip')
+
+    with timer('Writing testing data'):
+        test = dataset.loc[dataset.test == 1]
+        test.to_csv(path_to_output + '1.0-features-test.csv', compression='gzip')
 
 if __name__ == '__main__':
     build_features()

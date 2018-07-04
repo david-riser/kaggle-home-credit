@@ -10,49 +10,61 @@ import numpy as np
 import pandas as pd
 
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import roc_auc_score 
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import Imputer
+
 
 def main():
 
     # Define constants and configurations.
     path_to_data = '../../data/processed/'
+    path_to_output = '../../data/submissions/'
     sample_size  = 10000
     SEED         = 8675309
 
     # Load both training and testing
-    data = pd.read_csv(path_to_data + '1.0-features.csv', nrows=sample_size, compression='gzip')
+    train = pd.read_csv(path_to_data + '1.0-features-train.csv', nrows=sample_size, compression='gzip')
+    test = pd.read_csv(path_to_data + '1.0-features-test.csv', nrows=sample_size, compression='gzip')
 
-    print(data.test.describe())
+    # Drop 
+    y_train = train.TARGET 
+    y_test = test.TARGET 
+
+    # Save for predictions
+    test_ids = test.SK_ID_CURR
+    train.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
+    test.drop(columns=['test', 'SK_ID_CURR'], axis=1, inplace=True)
     
-    # Split into training and testing
-    # and remove data.
-    train = data[data.test == 0]
-    test  = data[data.test == 1]
-    del data
-
-    
-    # Setup columns for training
-    features = list(train.columns)
-    features.remove('test')
-    features.remove('SK_ID_CURR')
-    features.remove('TARGET')
-
     # Impute missing values.  This 
     # will transform our dataframe
     # to numpy.ndarray. 
     imp   = Imputer()
-    train = imp.fit_transform(train[features])
-    test  = imp.fit_transform(test[features])
+    train = imp.fit_transform(train)
+    test  = imp.fit_transform(test)
+
+    oof_preds = np.zeros(len(train))
+    sub_preds = np.zeros(len(test))
 
     # Setup kfolds and train.
-    kf = KFold(n_splits=5, random_state=SEED)
+    n_folds = 5
+    kf = KFold(n_splits=n_folds, random_state=SEED)
     for train_index, val_index in kf.split(train):
-        print('Training...')
-        #        rf = RandomForestClassifier()
-        #        rf.fit(train[features].iloc[train_index], train.TARGET.iloc[train_index])
+        rf = RandomForestClassifier()
+        rf.fit(train[train_index], y_train[train_index])
 
+        y_pred = rf.predict_proba(train[val_index])[:,1]
+        val_score = roc_auc_score(y_train[val_index], y_pred)
+        print('Validation AUC = %.4f' % val_score)
 
+        oof_preds[val_index] = y_pred
+        sub_preds += rf.predict_proba(test)[:,1] / n_folds
+
+    # Predict the test dataset 
+    print('Total ROC AUC = %.4f' % roc_auc_score(y_train, oof_preds))
+
+    submission = pd.DataFrame({'SK_ID_CURR':test_ids, 'TARGET':sub_preds})
+    submission.to_csv(path_to_output+'1.0-random-forest.csv', index=False)
 
 if __name__ == '__main__':
     main()
