@@ -156,7 +156,7 @@ def process_bureau(path_to_data='', sample_size=1000):
 
     # Add features before aggregation.
     bureau_data['CREDIT_RATIO'] = bureau_data.AMT_CREDIT_SUM / bureau_data.AMT_CREDIT_SUM_LIMIT
-    bureau_data['OVERDUE_RATIO'] = bureau_data.AMT_CREDIT_OVERDUE / bureau_data.AMT_CREDIT_SUM_LIMIT
+    bureau_data['OVERDUE_RATIO'] = bureau_data.AMT_CREDIT_SUM_OVERDUE / bureau_data.AMT_CREDIT_SUM_LIMIT
 
 
     # Simple aggregations
@@ -206,6 +206,8 @@ def process_previous(path_to_data='', sample_size=1000):
     encode_categoricals(previous_data)
 
     # Add features here.
+    previous_data['DOWNPAYMENT_CREDIT_RATIO'] = previous_data.AMT_DOWN_PAYMENT / previous_data.AMT_CREDIT
+    previous_data['CREDIT_APPLICATION_RATIO'] = previous_data.AMT_ANNUITY / previous_data.AMT_APPLICATION
 
     # Perform aggregations
     previous_aggregated = previous_data.groupby('SK_ID_CURR').aggregate(
@@ -215,6 +217,8 @@ def process_previous(path_to_data='', sample_size=1000):
     # Fix naming
     previous_aggregated.columns = [rename_column('PREV', col[0], col[1])
                                  for col in list(previous_aggregated.columns)]
+
+    previous_aggregated['PREV_COUNT'] = previous_aggregated.groupby('SK_ID_CURR').size()
     log.debug('Aggregated previous dataframe has columns %s', previous_aggregated.columns)
     return previous_aggregated
 
@@ -225,7 +229,7 @@ def build_features():
     # Constants for loading of data.
     # Placing None as the sample size
     # will run the complete dataset.
-    sample_size    = None
+    sample_size    = 50000
     path_to_data   = '../../data/raw/'
     path_to_output = '../../data/processed/'
 
@@ -269,11 +273,11 @@ def build_features():
     # Save compressed testing and training set. 
     with timer('Writing training data'):
         train = dataset.loc[dataset.test == 0]
-        train.to_csv(path_to_output + '1.0-features-train.csv', compression='gzip')
+        train.to_csv(path_to_output + '1.1-features-train.csv', compression='gzip')
 
     with timer('Writing testing data'):
         test = dataset.loc[dataset.test == 1]
-        test.to_csv(path_to_output + '1.0-features-test.csv', compression='gzip')
+        test.to_csv(path_to_output + '1.1-features-test.csv', compression='gzip')
 
 if __name__ == '__main__':
     build_features()

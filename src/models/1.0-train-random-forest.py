@@ -20,12 +20,12 @@ def main():
     # Define constants and configurations.
     path_to_data = '../../data/processed/'
     path_to_output = '../../data/submissions/'
-    sample_size  = 10000
+    sample_size  = None
     SEED         = 8675309
 
     # Load both training and testing
-    train = pd.read_csv(path_to_data + '1.0-features-train.csv', nrows=sample_size, compression='gzip')
-    test = pd.read_csv(path_to_data + '1.0-features-test.csv', nrows=sample_size, compression='gzip')
+    train = pd.read_csv(path_to_data + '1.1-features-train.csv', nrows=sample_size, compression='gzip')
+    test = pd.read_csv(path_to_data + '1.1-features-test.csv', nrows=sample_size, compression='gzip')
 
     # Drop 
     y_train = train.TARGET 

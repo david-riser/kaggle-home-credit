@@ -22,8 +22,8 @@ def main():
     SEED           = 8675309
 
     # Load both training and testing
-    train = pd.read_csv(path_to_data + '1.0-features-train.csv', nrows=sample_size, compression='gzip')
-    test = pd.read_csv(path_to_data + '1.0-features-test.csv', nrows=sample_size, compression='gzip')
+    train = pd.read_csv(path_to_data + '1.1-features-train.csv', nrows=sample_size, compression='gzip')
+    test = pd.read_csv(path_to_data + '1.1-features-test.csv', nrows=sample_size, compression='gzip')
 
     # Drop 
     labels = train.TARGET 
