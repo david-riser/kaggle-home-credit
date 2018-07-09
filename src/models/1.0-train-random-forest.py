@@ -64,6 +64,7 @@ def main():
     print('Total ROC AUC = %.4f' % roc_auc_score(y_train, oof_preds))
 
     submission = pd.DataFrame({'SK_ID_CURR':test_ids, 'TARGET':sub_preds})
+    submission['SK_ID_CURR'] = submission['SK_ID_CURR'].astype('int32')
     submission.to_csv(path_to_output+'1.0-random-forest.csv', index=False)
 
 if __name__ == '__main__':

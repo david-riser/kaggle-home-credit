@@ -68,6 +68,12 @@ def process_application(path_to_data='', sample_size=1000):
     # Perform label encoding on categorical variables.
     encode_categoricals(app)
 
+    # Add features 
+    app['DAYS_EMPLOYED_PERCENT'] = app.DAYS_EMPLOYED / app.DAYS_BIRTH
+    app['CREDIT_TERM'] = app.AMT_ANNUITY / app.AMT_CREDIT
+    app['CREDIT_INCOME_PERCENT'] = app.AMT_CREDIT / app.AMT_INCOME_TOTAL
+    app['ANNUITY_INCOME_PERCENT'] = app.AMT_ANNUITY / app.AMT_INCOME_TOTAL
+
     return app
 
 def process_installment(path_to_data='', sample_size=1000):
