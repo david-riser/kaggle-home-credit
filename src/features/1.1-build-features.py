@@ -229,7 +229,7 @@ def build_features():
     # Constants for loading of data.
     # Placing None as the sample size
     # will run the complete dataset.
-    sample_size    = 50000
+    sample_size    = None
     path_to_data   = '../../data/raw/'
     path_to_output = '../../data/processed/'
 

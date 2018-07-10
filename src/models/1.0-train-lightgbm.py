@@ -74,7 +74,7 @@ def main():
 
     submission = pd.DataFrame({'SK_ID_CURR':test_ids, 'TARGET':sub_preds})
     submission['SK_ID_CURR'] = submission['SK_ID_CURR'].astype('int32')
-    submission.to_csv(path_to_output+'1.0-lightgbm.csv', index=False)
+    submission.to_csv(path_to_output+'1.1-lightgbm.csv', index=False)
 
 if __name__ == '__main__':
     main()
