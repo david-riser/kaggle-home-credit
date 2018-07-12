@@ -29,9 +29,19 @@ def main():
     labels = train.TARGET
 
     # Save for predictions
-    test_ids = test.SK_ID_CURR
+    test_ids = test.SK_ID_CURR.values 
     train.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
     test.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
+
+    # Find columns with all zeros in testing 
+    zero_cols = [col for col in test.columns if (test[col].isnull().sum() == len(test))]
+    train.drop(columns=zero_cols, axis=1, inplace=True)
+    test.drop(columns=zero_cols, axis=1, inplace=True)
+
+    # Find columns with all zeros in training 
+    zero_cols = [col for col in train.columns if (train[col].isnull().sum() == len(train))]
+    train.drop(columns=zero_cols, axis=1, inplace=True)
+    test.drop(columns=zero_cols, axis=1, inplace=True)
 
     # Debugging
     print('Shape of train: ', train.shape)
@@ -39,18 +49,9 @@ def main():
     different_cols = [col for col in test.columns if col not in train.columns]
     print('Different cols: ', different_cols)
 
-    # Homecooked imputation
-    for col in list(train.columns):
-        mean = train[col].mean()
-        train[col].replace(np.nan, mean)
-
-    for col in list(test.columns):
-        mean = test[col].mean()
-        test[col].replace(np.nan, mean)
-
-    #    imp   = Imputer()
-    #    train = imp.fit_transform(train)
-    #    test  = imp.fit_transform(test)
+    imp   = Imputer(axis=0)
+    train = imp.fit_transform(train)
+    test  = imp.fit_transform(test)
 
     oof_preds = np.zeros(train.shape[0])
     sub_preds = np.zeros(test.shape[0])
@@ -64,6 +65,8 @@ def main():
     for train_index, val_index in kf.split(train):
         x_train, y_train = train[train_index], labels[train_index]
         x_valid, y_valid = train[val_index], labels[val_index]
+        #        x_train, y_train = train.iloc[train_index].values, labels[train_index]
+        #        x_valid, y_valid = train.iloc[val_index].values, labels[val_index]
 
         # Define model
         gnb = GaussianNB()
