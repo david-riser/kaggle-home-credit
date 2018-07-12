@@ -25,17 +25,17 @@ def main():
     train = pd.read_csv(path_to_data + '1.1-features-train.csv', nrows=sample_size, compression='gzip')
     test = pd.read_csv(path_to_data + '1.1-features-test.csv', nrows=sample_size, compression='gzip')
 
-    # Drop 
-    labels = train.TARGET 
+    # Drop
+    labels = train.TARGET
 
     # Save for predictions
     test_ids = test.SK_ID_CURR
 
-    # The way I constructed the testing set in the 
-    # feature building notebook leaves it with an empty TARGET column. 
+    # The way I constructed the testing set in the
+    # feature building notebook leaves it with an empty TARGET column.
     train.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
     test.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
-    
+
     oof_preds = np.zeros(len(train))
     sub_preds = np.zeros(len(test))
 
@@ -43,7 +43,6 @@ def main():
     n_folds = 5
     kf = KFold(n_splits=n_folds, random_state=SEED)
     for train_index, val_index in kf.split(train):
-
         x_train, y_train = train.iloc[train_index].values, labels[train_index]
         x_valid, y_valid = train.iloc[val_index].values, labels[val_index]
 

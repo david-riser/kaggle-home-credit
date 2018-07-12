@@ -20,7 +20,7 @@ def main():
     # Define constants and configurations.
     path_to_data = '../../data/processed/'
     path_to_output = '../../data/submissions/'
-    sample_size  = None
+    sample_size  = 20000
     SEED         = 8675309
 
     # Load both training and testing
