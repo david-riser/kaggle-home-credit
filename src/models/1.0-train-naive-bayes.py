@@ -29,17 +29,19 @@ def main():
     labels = train.TARGET
 
     # Save for predictions
-    test_ids = test.SK_ID_CURR.values 
+    test_ids = test.SK_ID_CURR.values
     train.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
     test.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
 
     # Find columns with all zeros in testing 
-    zero_cols = [col for col in test.columns if (test[col].isnull().sum() == len(test))]
+    #    zero_cols = [col for col in test.columns if (test[col].isnull().sum() == len(test))]
+    zero_cols = [col for col in test.columns if (float(test[col].isnull().sum() / len(test)) > 0.95)]
     train.drop(columns=zero_cols, axis=1, inplace=True)
     test.drop(columns=zero_cols, axis=1, inplace=True)
 
     # Find columns with all zeros in training 
-    zero_cols = [col for col in train.columns if (train[col].isnull().sum() == len(train))]
+    #    zero_cols = [col for col in train.columns if (train[col].isnull().sum() == len(train))]
+    zero_cols = [col for col in train.columns if (float(train[col].isnull().sum() / len(train)) > 0.95)]
     train.drop(columns=zero_cols, axis=1, inplace=True)
     test.drop(columns=zero_cols, axis=1, inplace=True)
 
