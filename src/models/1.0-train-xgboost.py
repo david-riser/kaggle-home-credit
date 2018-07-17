@@ -13,29 +13,36 @@ import xgboost as xgb
 from sklearn.metrics import roc_auc_score 
 from sklearn.model_selection import KFold
 
-def main():
-
-    # Define constants and configurations.
-    path_to_data   = '../../data/processed/'
-    path_to_output = '../../data/submissions/'
-    sample_size    = None
-    SEED           = 8675309
+def load_features(path_to_data, version, sample_size=10000):
 
     # Load both training and testing
-    train = pd.read_csv(path_to_data + '1.1-features-train.csv', nrows=sample_size, compression='gzip')
-    test = pd.read_csv(path_to_data + '1.1-features-test.csv', nrows=sample_size, compression='gzip')
+    train = pd.read_csv(path_to_data + version +'-features-train.csv', nrows=sample_size, compression='gzip')
+    test = pd.read_csv(path_to_data + version + '-features-test.csv', nrows=sample_size, compression='gzip')
 
     # Drop
-    labels = train.TARGET
+    labels = train['TARGET']
 
     # Save for predictions
-    test_ids = test.SK_ID_CURR
+    train_ids = train['SK_ID_CURR']
+    test_ids = test['SK_ID_CURR']
 
     # The way I constructed the testing set in the
     # feature building notebook leaves it with an empty TARGET column.
     train.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
     test.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
 
+    return train, labels, test, train_ids, test_ids
+
+def train():
+    # Define constants and configurations.
+    path_to_data = '../../data/processed/'
+    path_to_output = '../../data/submissions/'
+    path_to_preds = '../../data/predictions/'
+    version = '1.1'
+    sample_size = 10000
+    SEED = 8675309
+
+    train, labels, test, train_ids, test_ids = load_features(path_to_data, version, sample_size)
     oof_preds = np.zeros(len(train))
     sub_preds = np.zeros(len(test))
 
@@ -45,9 +52,6 @@ def main():
     for train_index, val_index in kf.split(train):
         x_train, y_train = train.iloc[train_index].values, labels[train_index]
         x_valid, y_valid = train.iloc[val_index].values, labels[val_index]
-
-        #        x_train.columns = train.columns
-        #        x_valid.columns = train.columns
 
         clf = xgb.XGBClassifier(
             learning_rate=0.1,
@@ -72,9 +76,14 @@ def main():
     # Predict the test dataset 
     print('Total ROC AUC = %.4f' % roc_auc_score(labels, oof_preds))
 
+    # Save the predictions for this model.
     submission = pd.DataFrame({'SK_ID_CURR':test_ids, 'TARGET':sub_preds})
     submission['SK_ID_CURR'] = submission['SK_ID_CURR'].astype('int32')
     submission.to_csv(path_to_output+'1.1-xgboost.csv', index=False)
 
+    # Save out of fold predictions for model stacking.
+    oof = pd.DataFrame({'SK_ID_CURR':train_ids, 'XGB':oof_preds, 'TARGET':labels})
+    oof.to_csv(path_to_preds + version + '-xgboost.csv', index=False)
+
 if __name__ == '__main__':
-    main()
+    train()
