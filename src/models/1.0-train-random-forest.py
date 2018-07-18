@@ -34,14 +34,14 @@ def main():
     # Save for predictions
     test_ids = test.SK_ID_CURR
     train.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
-    test.drop(columns=['test', 'SK_ID_CURR'], axis=1, inplace=True)
+    test.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
     
     # Impute missing values.  This 
     # will transform our dataframe
     # to numpy.ndarray. 
     imp   = Imputer()
     train = imp.fit_transform(train)
-    test  = imp.fit_transform(test)
+    test  = imp.transform(test)
 
     oof_preds = np.zeros(len(train))
     sub_preds = np.zeros(len(test))
@@ -50,7 +50,10 @@ def main():
     n_folds = 5
     kf = KFold(n_splits=n_folds, random_state=SEED)
     for train_index, val_index in kf.split(train):
-        rf = RandomForestClassifier()
+        rf = RandomForestClassifier(
+            n_jobs=-1,
+            n_estimators=50
+            )
         rf.fit(train[train_index], y_train[train_index])
 
         y_pred = rf.predict_proba(train[val_index])[:,1]

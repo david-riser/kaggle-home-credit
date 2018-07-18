@@ -35,13 +35,13 @@ def main():
 
     # Find columns with all zeros in testing 
     #    zero_cols = [col for col in test.columns if (test[col].isnull().sum() == len(test))]
-    zero_cols = [col for col in test.columns if (float(test[col].isnull().sum() / len(test)) > 0.95)]
+    zero_cols = [col for col in test.columns if (float(test[col].isnull().sum() / len(test)) > 0.80)]
     train.drop(columns=zero_cols, axis=1, inplace=True)
     test.drop(columns=zero_cols, axis=1, inplace=True)
 
     # Find columns with all zeros in training 
     #    zero_cols = [col for col in train.columns if (train[col].isnull().sum() == len(train))]
-    zero_cols = [col for col in train.columns if (float(train[col].isnull().sum() / len(train)) > 0.95)]
+    zero_cols = [col for col in train.columns if (float(train[col].isnull().sum() / len(train)) > 0.80)]
     train.drop(columns=zero_cols, axis=1, inplace=True)
     test.drop(columns=zero_cols, axis=1, inplace=True)
 
@@ -52,17 +52,18 @@ def main():
     print('Different cols: ', different_cols)
 
     # Testing
-    train.fillna(0, inplace=True)
-    test.fillna(0, inplace=True)
+    #    train.fillna(0, inplace=True)
+    #    test.fillna(0, inplace=True)
 
     imp   = Imputer(axis=0)
     train = imp.fit_transform(train)
-    test  = imp.fit_transform(test)
+    #    test  = imp.fit_transform(test)
+    test  = imp.transform(test)
 
     oof_preds = np.zeros(train.shape[0])
     sub_preds = np.zeros(test.shape[0])
-    print('Shape of train: ', train.shape)
-    print('Shape of test: ', test.shape)
+    print('Shape of train after imputing: ', train.shape)
+    print('Shape of test after imputing: ', test.shape)
     print('Shape of submission: ', sub_preds.shape)
 
     # Setup kfolds and train.
