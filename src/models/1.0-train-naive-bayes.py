@@ -51,6 +51,10 @@ def main():
     different_cols = [col for col in test.columns if col not in train.columns]
     print('Different cols: ', different_cols)
 
+    # Testing
+    train.fillna(0, inplace=True)
+    test.fillna(0, inplace=True)
+
     imp   = Imputer(axis=0)
     train = imp.fit_transform(train)
     test  = imp.fit_transform(test)

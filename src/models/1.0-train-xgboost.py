@@ -82,7 +82,7 @@ def train():
     submission.to_csv(path_to_output+'1.1-xgboost.csv', index=False)
 
     # Save out of fold predictions for model stacking.
-    oof = pd.DataFrame({'SK_ID_CURR':train_ids, 'XGB':oof_preds, 'TARGET':labels})
+    oof = pd.DataFrame({'SK_ID_CURR':train_ids, 'xgboost':oof_preds, 'TARGET':labels})
     oof.to_csv(path_to_preds + version + '-xgboost.csv', index=False)
 
 if __name__ == '__main__':

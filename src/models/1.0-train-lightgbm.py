@@ -1,10 +1,10 @@
 #
-# 1.0-train-random-forest.py
+# 1.0-train-lightgbm.py
 # Author: David Riser
 # Date: July 2, 2018
 #
 # Using the output (in data/processed/) from the feature building scripts
-# in src/features, a random forest is trained.
+# in src/features, LightGBM is trained.
 
 import numpy as np
 import pandas as pd
@@ -40,7 +40,7 @@ def train():
     path_to_output = '../../data/submissions/'
     path_to_preds  = '../../data/predictions/'
     version        = '1.1'
-    sample_size    = 10000
+    sample_size    = None
     SEED           = 8675309
 
     # Setup the feature datasets and prediction containers
@@ -82,10 +82,10 @@ def train():
 
     submission = pd.DataFrame({'SK_ID_CURR':test_ids, 'TARGET':sub_preds})
     submission['SK_ID_CURR'] = submission['SK_ID_CURR'].astype('int32')
-    submission.to_csv(path_to_output+'1.1-lightgbm.csv', index=False)
+    submission.to_csv(path_to_output + version + '-lightgbm.csv', index=False)
 
     # Save out of fold predictions for model stacking.
-    oof = pd.DataFrame({'SK_ID_CURR':train_ids, 'LGBM':oof_preds, 'TARGET':labels})
+    oof = pd.DataFrame({'SK_ID_CURR':train_ids, 'lightgbm':oof_preds, 'TARGET':labels})
     oof.to_csv(path_to_preds + version + '-lightgbm.csv', index=False)
 
 
