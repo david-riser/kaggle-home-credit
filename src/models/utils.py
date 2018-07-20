@@ -20,6 +20,11 @@ def load_features(path_to_data, version, sample_size=10000):
     # Load both training and testing
     train = pd.read_csv(path_to_data + version +'-features-train.csv', nrows=sample_size, compression='gzip')
     test = pd.read_csv(path_to_data + version + '-features-test.csv', nrows=sample_size, compression='gzip')
+    print('Loaded training shape: ', train.shape)
+    print('Loaded test shape: ', test.shape)
+    
+    train.dropna(subset=['SK_ID_CURR'], axis=0, inplace=True) 
+    print('Dropped nan training shape: ', train.shape)
 
     # Drop
     labels = train['TARGET']
