@@ -34,7 +34,7 @@ def train():
 
     version = '1.1'
     random_seed = 8675309
-    sample_size = 50000
+    sample_size = None
     n_folds = 5
 
     xgb_params = {
@@ -45,7 +45,7 @@ def train():
         'subsample':0.8,
         'colsample_bytree':0.8,
         'objective':'binary:logistic',
-        'nthread':4,
+        'nthread':8,
         'seed':random_seed,
         'scale_pos_weight':2.5,
         'reg_alpha':1.2,
@@ -65,6 +65,7 @@ def train():
                                       random_seed=random_seed)
 
     df_oof_train = pd.DataFrame({'SK_ID_CURR':train_ids, 'TARGET':labels, 'xgboost':oof_train})
+    df_oof_train.fillna(0, inplace=True)
     df_oof_train['SK_ID_CURR'] = df_oof_train['SK_ID_CURR'].astype('int32')
 
     df_oof_test = pd.DataFrame({'SK_ID_CURR':test_ids, 'TARGET':oof_test})

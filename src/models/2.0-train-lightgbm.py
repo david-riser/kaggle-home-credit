@@ -66,10 +66,11 @@ def train():
                                       random_seed=random_seed)
 
     df_oof_train = pd.DataFrame({'SK_ID_CURR':train_ids, 'TARGET':labels, 'lightgbm':oof_train})
-    #    df_oof_train['SK_ID_CURR'] = df_oof_train['SK_ID_CURR'].astype('int32')
+    df_oof_train.fillna(0,inplace=True)
+    df_oof_train['SK_ID_CURR'] = df_oof_train['SK_ID_CURR'].astype('int32')
 
     df_oof_test = pd.DataFrame({'SK_ID_CURR':test_ids, 'TARGET':oof_test})
-    #    df_oof_test['SK_ID_CURR'] = df_oof_test['SK_ID_CURR'].astype('int32')
+    df_oof_test['SK_ID_CURR'] = df_oof_test['SK_ID_CURR'].astype('int32')
 
     df_oof_train.to_csv(path_to_preds + version + '-lightgbm.csv', index=False)
     df_oof_test.to_csv(path_to_output + version + '-lightgbm.csv', index=False)
