@@ -1,16 +1,16 @@
 #
-# 2.0-train-lightgbm.py
+# 2.1-train-lightgbm.py
 # Author: David Riser
-# Date: July 20, 2018
+# Date: July 21, 2018
 #
 # Using the output (in data/processed/) from the feature building scripts
-# in src/features, lightgbm is trained.
+# in src/features, lightgbm is trained.  In this model, SMOTE is used to
+# upsample the minority class. 
 
 
 import lightgbm
 import pandas as pd
 import utils
-
 
 class LightGBMWrapper(object):
     def __init__(self, clf, seed=0, params=None):
@@ -36,7 +36,7 @@ def train():
 
     version = '1.1'
     random_seed = 8675309
-    sample_size = None
+    sample_size = 50000
     n_folds = 5
 
     params = {
@@ -63,7 +63,8 @@ def train():
                                       labels=labels,
                                       test=test,
                                       n_folds=n_folds,
-                                      random_seed=random_seed)
+                                      random_seed=random_seed,
+                                      use_smote=True)
 
     df_oof_train = pd.DataFrame({'SK_ID_CURR':train_ids, 'TARGET':labels, 'lightgbm':oof_train})
     #    df_oof_train['SK_ID_CURR'] = df_oof_train['SK_ID_CURR'].astype('int32')
