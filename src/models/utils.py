@@ -14,7 +14,7 @@ import time
 
 from sklearn.model_selection import KFold
 from sklearn.metrics import roc_auc_score
-from imblearn.over_sampling import SMOTE 
+#from imblearn.over_sampling import SMOTE 
 
 def load_features(path_to_data, version, sample_size=10000):
 
@@ -24,15 +24,15 @@ def load_features(path_to_data, version, sample_size=10000):
     print('Loaded training shape: ', train.shape)
     print('Loaded test shape: ', test.shape)
     
-    #    train.dropna(subset=['SK_ID_CURR'], axis=0, inplace=True) 
-    #    print('Dropped nan training shape: ', train.shape)
+    train.dropna(subset=['SK_ID_CURR'], axis=0, inplace=True) 
+    print('Dropped nan training shape: ', train.shape)
 
     # Drop
-    labels = train['TARGET'].copy()
+    labels = train['TARGET'].values
 
     # Save for predictions
-    train_ids = train['SK_ID_CURR'].copy()
-    test_ids = test['SK_ID_CURR'].copy()
+    train_ids = train['SK_ID_CURR'].values
+    test_ids = test['SK_ID_CURR'].values
 
     # The way I constructed the testing set in the
     # feature building notebook leaves it with an empty TARGET column.
@@ -52,9 +52,9 @@ def kfold(classifier_builder, classifier_params, base_classifier,
           train, labels, test, n_folds=5, random_seed=0, use_smote=False):
 
     # Replace nan
-    if use_smote:
-        train.fillna(0, inplace=True)
-        test.fillna(0, inplace=True)
+    #    if use_smote:
+    #        train.fillna(0, inplace=True)
+    #        test.fillna(0, inplace=True)
 
     # Testing and training out of fold
     # predictions.
@@ -68,10 +68,10 @@ def kfold(classifier_builder, classifier_params, base_classifier,
 
         x_train, y_train = train.iloc[train_index].values, labels[train_index]
         x_valid, y_valid = train.iloc[val_index].values, labels[val_index]
-
-        if use_smote:
-            sm = SMOTE(k_neighbors=5)
-            x_train, y_train = sm.fit_sample(x_train, y_train)
+        
+        #        if use_smote:
+        #            sm = SMOTE(k_neighbors=5)
+        #            x_train, y_train = sm.fit_sample(x_train, y_train)
         
         # This is just a wrapper that has fit and predict
         # functionality.

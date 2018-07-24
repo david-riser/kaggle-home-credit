@@ -18,60 +18,37 @@ from sklearn.preprocessing import Imputer
 def main():
 
     # Define constants and configurations.
-    path_to_data = '../../data/processed/'
+    path_to_data   = '../../data/processed/'
     path_to_output = '../../data/submissions/'
-    sample_size  = None
-    SEED         = 8675309
+    sample_size    = None
+    SEED           = 8675309
 
     # Load both training and testing
-    train = pd.read_csv(path_to_data + '1.1-features-train.csv', nrows=sample_size, compression='gzip')
-    test = pd.read_csv(path_to_data + '1.1-features-test.csv', nrows=sample_size, compression='gzip')
-    labels = train.TARGET
+    train = pd.read_csv(path_to_data + '1.2-features-train.csv', nrows=sample_size, compression='gzip')
+    test = pd.read_csv(path_to_data + '1.2-features-test.csv', nrows=sample_size, compression='gzip')
+    labels = train['TARGET'].values 
 
     # Save for predictions
-    test_ids = test.SK_ID_CURR.values
+    test_ids = test['SK_ID_CURR'].values
     train.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
-    test.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
+    test.drop(columns=['test', 'SK_ID_CURR'], axis=1, inplace=True)
 
-    # Find columns with all zeros in testing 
-    #    zero_cols = [col for col in test.columns if (test[col].isnull().sum() == len(test))]
-    zero_cols = [col for col in test.columns if (float(test[col].isnull().sum() / len(test)) > 0.80)]
-    train.drop(columns=zero_cols, axis=1, inplace=True)
-    test.drop(columns=zero_cols, axis=1, inplace=True)
+    imp   = Imputer()
+    train_imp = imp.fit_transform(train)
+    test_imp  = imp.transform(test)
 
-    # Find columns with all zeros in training 
-    #    zero_cols = [col for col in train.columns if (train[col].isnull().sum() == len(train))]
-    zero_cols = [col for col in train.columns if (float(train[col].isnull().sum() / len(train)) > 0.80)]
-    train.drop(columns=zero_cols, axis=1, inplace=True)
-    test.drop(columns=zero_cols, axis=1, inplace=True)
+    train_df = pd.DataFrame(train_imp)
+    test_df = pd.DataFrame(test_imp)
 
-    # Debugging
-    print('Shape of train: ', train.shape)
-    print('Shape of test: ', test.shape)
-    different_cols = [col for col in test.columns if col not in train.columns]
-    print('Different cols: ', different_cols)
-
-    # Testing
-    #    train.fillna(0, inplace=True)
-    #    test.fillna(0, inplace=True)
-
-    imp   = Imputer(axis=0)
-    train = imp.fit_transform(train)
-    #    test  = imp.fit_transform(test)
-    test  = imp.transform(test)
-
-    oof_preds = np.zeros(train.shape[0])
-    sub_preds = np.zeros(test.shape[0])
-    print('Shape of train after imputing: ', train.shape)
-    print('Shape of test after imputing: ', test.shape)
-    print('Shape of submission: ', sub_preds.shape)
+    oof_preds = np.zeros(train_df.shape[0])
+    sub_preds = np.zeros(test_df.shape[0])
 
     # Setup kfolds and train.
     n_folds = 5
     kf = KFold(n_splits=n_folds, random_state=SEED)
-    for train_index, val_index in kf.split(train):
-        x_train, y_train = train[train_index], labels[train_index]
-        x_valid, y_valid = train[val_index], labels[val_index]
+    for train_index, val_index in kf.split(train_df):
+        x_train, y_train = train_df.iloc[train_index], labels[train_index]
+        x_valid, y_valid = train_df.iloc[val_index], labels[val_index]
         #        x_train, y_train = train.iloc[train_index].values, labels[train_index]
         #        x_valid, y_valid = train.iloc[val_index].values, labels[val_index]
 
@@ -84,7 +61,7 @@ def main():
         print('Validation AUC = %.4f' % val_score)
 
         oof_preds[val_index] = y_pred
-        preds = gnb.predict_proba(test)[:,1] / n_folds
+        preds = gnb.predict_proba(test_df)[:,1] / n_folds
         print('Shape of model prediction: ', preds.shape)
 
         sub_preds += preds
@@ -94,7 +71,7 @@ def main():
 
     submission = pd.DataFrame({'SK_ID_CURR':test_ids, 'TARGET':sub_preds})
     submission['SK_ID_CURR'] = submission['SK_ID_CURR'].astype('int32')
-    submission.to_csv(path_to_output+'1.1-naive-bayes.csv', index=False)
+    submission.to_csv(path_to_output+'1.2-naive-bayes.csv', index=False)
 
 if __name__ == '__main__':
     main()
