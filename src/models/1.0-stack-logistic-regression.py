@@ -1,16 +1,16 @@
 #
-# 1.0-stack-lightgbm.py
+# 1.0-stack-logistic-regression.py
 # Author: David Riser
-# Date: July 17, 2018
+# Date: July 21, 2018
 #
 # Using the predictions from the train models
-# that are stored in data/predictions lightgbm
+# that are stored in data/predictions logistic regression
 # is trained as a stacker.
 
 import numpy as np
 import pandas as pd
 
-from lightgbm import LGBMClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import KFold
 
@@ -113,35 +113,18 @@ def stack():
         x_train, y_train = all_train.iloc[train_index][models].values, all_train.iloc[train_index]['TARGET'].values
         x_valid, y_valid = all_train.iloc[valid_index][models].values, all_train.iloc[valid_index]['TARGET'].values
 
-
-        clf = LGBMClassifier(
-            nthread=4,
-            n_estimators=10000,
-            learning_rate=0.02,
-            num_leaves=34,
-            colsample_bytree=0.9497036,
-            subsample=0.8715623,
-            max_depth=8,
-            reg_alpha=0.041545473,
-            reg_lambda=0.0735294,
-            min_split_gain=0.0222415,
-            min_child_weight=39.3259775,
-            silent=-1,
-            verbose=-1
-            )
-
-        clf.fit(x_train, y_train, eval_set=[(x_train, y_train), (x_valid, y_valid)], eval_metric='auc',
-                verbose=100, early_stopping_rounds=200)
-
-        oof_preds[valid_index] = clf.predict_proba(x_valid, num_iteration=clf.best_iteration_)[:,1]
-        sub_preds += clf.predict_proba(all_test, num_iteration=clf.best_iteration_)[:,1] / n_folds
+        clf = LogisticRegression()
+        clf.fit(x_train, y_train)
+        
+        oof_preds[valid_index] = clf.predict_proba(x_valid)[:,1]
+        sub_preds += clf.predict_proba(all_test)[:,1] / n_folds
 
     # Summarize
     print('Total ROC AUC = %.4f' % roc_auc_score(all_train['TARGET'].values, oof_preds))
 
     # Predict the test set for submission.
     submission = pd.DataFrame({'SK_ID_CURR':test_ids, 'TARGET':sub_preds})
-    submission.to_csv(path_to_output + version + '-stack.csv', index=False)
+    submission.to_csv(path_to_output + version + '-stack-logistic-regression.csv', index=False)
 
 if __name__ == '__main__':
     stack()
