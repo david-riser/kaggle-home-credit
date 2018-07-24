@@ -27,16 +27,22 @@ def load_features(path_to_data, version, sample_size=10000):
     print('Dropped nan training shape: ', train.shape)
 
     # Drop
-    labels = train['TARGET']
+    labels = train['TARGET'].copy()
 
     # Save for predictions
-    train_ids = train['SK_ID_CURR']
-    test_ids = test['SK_ID_CURR']
+    train_ids = train['SK_ID_CURR'].copy()
+    test_ids = test['SK_ID_CURR'].copy()
 
     # The way I constructed the testing set in the
     # feature building notebook leaves it with an empty TARGET column.
+    # This was fixed in version 1.2. The if statement 
+    # below makes it possible to use either. 
     train.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
-    test.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
+
+    if 'TARGET' in test.columns:
+        test.drop(columns=['test', 'SK_ID_CURR', 'TARGET'], axis=1, inplace=True)
+    else:
+        test.drop(columns=['test', 'SK_ID_CURR'], axis=1, inplace=True)
 
     return train, labels, test, train_ids, test_ids
 

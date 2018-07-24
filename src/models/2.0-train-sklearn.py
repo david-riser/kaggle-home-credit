@@ -7,6 +7,7 @@
 # in src/features, sklearn models are trained.
 
 
+import numpy as np 
 import pandas as pd
 import utils
 
@@ -32,7 +33,7 @@ def train():
     path_to_output = '../../data/submissions/'
     path_to_preds  = '../../data/predictions/'
 
-    version = '1.1'
+    version = '1.2'
     random_seed = 8675309
     sample_size = None
     n_folds = 5
@@ -49,17 +50,47 @@ def train():
 
     # Handle NaN values.
     # This converts pandas.DataFrame to numpy.ndarray.
+
+    '''
     imp = Imputer()
-    train = imp.fit_transform(train)
-    test = imp.transform(test)
+    train_imp = imp.fit_transform(train)
+    test_imp = imp.transform(test)
+
+    if not np.isfinite(train_imp).all():
+        print('Training data contains bad values.')
+        print(train_imp[np.where(train_imp == np.inf)])
+        print(train_imp[np.where(train_imp == -np.inf)])
+        exit() 
+
+    if not np.isfinite(labels).all():
+        print('Training labels contains bad values.')
+        print(labels[np.where(labels == np.inf)])
+        print(labels[np.where(labels == -np.inf)])
+        exit() 
+
+    if not np.isfinite(test_imp).all():
+        print('Testing data contains bad values.')
+        print(test_imp[np.where(test_imp == np.inf)])
+        print(test_imp[np.where(test_imp == -np.inf)])
+        exit()
 
     # Cast to pandas.dataframe for kfold method.
-    train = pd.DataFrame(train)
-    test = pd.DataFrame(test)
+    train_df = pd.DataFrame(train_imp)
+    test_df = pd.DataFrame(test_imp)
+    del train, test, train_imp, test_imp  
 
     # Check format 
-    print('Summary of training nulls: ', train.isnull().sum().sum())
-    print('Summary of testing nulls: ', test.isnull().sum().sum())
+    print('Summary of training nulls: ', train_df.isnull().sum().sum())
+    print('Summary of testing nulls: ', test_df.isnull().sum().sum())
+    '''
+
+    train_df = train.fillna(0)
+    train_df.replace(np.inf, 0, inplace=True)
+    train_df.replace(-np.inf, 0, inplace=True)
+
+    test_df = test.fillna(0)
+    test_df.replace(np.inf, 0, inplace=True)
+    test_df.replace(-np.inf, 0, inplace=True)
 
     # ------------------------------------------------------------------------
     #    Start training models. 
@@ -69,9 +100,9 @@ def train():
     oof_train, oof_test = utils.kfold(classifier_builder=SklearnWrapper,
                                       base_classifier=RandomForestClassifier,
                                       classifier_params=rf_params,
-                                      train=train,
+                                      train=train_df,
                                       labels=labels,
-                                      test=test,
+                                      test=test_df,
                                       n_folds=n_folds,
                                       random_seed=random_seed)
 
@@ -89,9 +120,9 @@ def train():
     oof_train, oof_test = utils.kfold(classifier_builder=SklearnWrapper,
                                       base_classifier=ExtraTreesClassifier,
                                       classifier_params=et_params,
-                                      train=train,
+                                      train=train_df,
                                       labels=labels,
-                                      test=test,
+                                      test=test_df,
                                       n_folds=n_folds,
                                       random_seed=random_seed)
 
@@ -109,9 +140,9 @@ def train():
     oof_train, oof_test = utils.kfold(classifier_builder=SklearnWrapper,
                                       base_classifier=GaussianNB,
                                       classifier_params=nb_params,
-                                      train=train,
+                                      train=train_df,
                                       labels=labels,
-                                      test=test,
+                                      test=test_df,
                                       n_folds=n_folds,
                                       random_seed=random_seed)
 
