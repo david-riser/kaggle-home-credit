@@ -34,7 +34,7 @@ def train():
     path_to_output = '../../data/submissions/'
     path_to_preds  = '../../data/predictions/'
 
-    version = '1.1'
+    version = '1.2'
     random_seed = 8675309
     sample_size = None
     n_folds = 5
