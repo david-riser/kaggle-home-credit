@@ -199,10 +199,6 @@ def process_bureau(path_to_data='', sample_size=1000):
     bureau_data['CREDIT_RATIO'] = bureau_data.AMT_CREDIT_SUM / bureau_data.AMT_CREDIT_SUM_LIMIT
     bureau_data['OVERDUE_RATIO'] = bureau_data.AMT_CREDIT_SUM_OVERDUE / bureau_data.AMT_CREDIT_SUM_LIMIT
 
-    # Features from neptune-ml open solution.
-    bureau['bureau_credit_active_binary'] = (bureau['CREDIT_ACTIVE'] != 'Closed').astype(int)
-    bureau['bureau_credit_enddate_binary'] = (bureau['DAYS_CREDIT_ENDDATE'] > 0).astype(int)
-
     # Simple aggregations
     bureau_aggregated = bureau_data.groupby('SK_ID_CURR').aggregate(
         ['min', 'max', 'mean', 'var']
