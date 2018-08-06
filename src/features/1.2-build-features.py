@@ -20,13 +20,13 @@ import time
 from contextlib import contextmanager
 from sklearn.preprocessing import LabelEncoder
 
-# Taken from https://www.kaggle.com/jsaguiar/updated-0-792-lb-lightgbm-with-simple-features/code
-# and modified to log instead of print. 
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__file__)
 
+# Taken from https://www.kaggle.com/jsaguiar/updated-0-792-lb-lightgbm-with-simple-features/code
+# and modified to log instead of print.
 @contextmanager
 def timer(title):
     t0 = time.time()
@@ -69,6 +69,13 @@ def process_application(path_to_data='', sample_size=1000):
     app = pd.concat(list([app_train, app_test]), axis=0)
     log.info('Concatenated training/testing data with shape %s', app.shape)
 
+    # Basic cleaning to change place holders to nan.
+    app['CODE_GENDER'].replace('XNA', np.nan, inplace=True)
+    app['DAYS_EMPLOYED'].replace(365243, np.nan, inplace=True)
+    app['DAYS_LAST_PHONE_CHANGE'].replace(0, np.nan, inplace=True)
+    app['NAME_FAMILY_STATUS'].replace('Unknown', np.nan, inplace=True)
+    app['ORGANIZATION_TYPE'].replace('XNA', np.nan, inplace=True)
+
     # Perform label encoding on categorical variables.
     encode_categoricals(app)
 
@@ -80,6 +87,26 @@ def process_application(path_to_data='', sample_size=1000):
     app['EXT_SOURCE_MEAN'] = app[['EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3']].mean(axis=1)
     app['EXT_SOURCE_STD'] = app[['EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3']].std(axis=1)
     app['CREDIT_GOODS_RATIO'] = app.AMT_CREDIT / app.AMT_GOODS_PRICE
+
+    # Additional features from neptune-ml open solution.
+    app['car_to_birth_ratio'] = app['OWN_CAR_AGE'] / app['DAYS_BIRTH']
+    app['car_to_employ_ratio'] = app['OWN_CAR_AGE'] / app['DAYS_EMPLOYED']
+    app['children_ratio'] = app['CNT_CHILDREN'] / app['CNT_FAM_MEMBERS']
+    app['credit_to_annuity_ratio'] = app['AMT_CREDIT'] / app['AMT_ANNUITY']
+    app['credit_to_goods_ratio'] = app['AMT_CREDIT'] / app['AMT_GOODS_PRICE']
+    app['income_per_child'] = app['AMT_INCOME_TOTAL'] / (1 + app['CNT_CHILDREN'])
+    app['income_per_person'] = app['AMT_INCOME_TOTAL'] / app['CNT_FAM_MEMBERS']
+    app['phone_to_birth_ratio'] = app['DAYS_LAST_PHONE_CHANGE'] / app['DAYS_BIRTH']
+    app['phone_to_employ_ratio'] = app['DAYS_LAST_PHONE_CHANGE'] / app['DAYS_EMPLOYED']
+    app['external_sources_weighted'] = app.EXT_SOURCE_1 * 2 + app.EXT_SOURCE_2 * 3 + app.EXT_SOURCE_3 * 4
+    app['cnt_non_child'] = app['CNT_FAM_MEMBERS'] - app['CNT_CHILDREN']
+    app['child_to_non_child_ratio'] = app['CNT_CHILDREN'] / app['cnt_non_child']
+    app['income_per_non_child'] = app['AMT_INCOME_TOTAL'] / app['cnt_non_child']
+    app['credit_per_person'] = app['AMT_CREDIT'] / app['CNT_FAM_MEMBERS']
+    app['credit_per_child'] = app['AMT_CREDIT'] / (1 + app['CNT_CHILDREN'])
+    app['credit_per_non_child'] = app['AMT_CREDIT'] / app['cnt_non_child']
+    app['short_employment'] = (app['DAYS_EMPLOYED'] < -2000).astype(int)
+    app['young_age'] = (app['DAYS_BIRTH'] < -14000).astype(int)
 
     return app
 
@@ -122,6 +149,9 @@ def process_creditcard(path_to_data='', sample_size=1000):
 
     # Load and encode.
     credit_card_data = pd.read_csv(path_to_data + 'credit_card_balance.csv', nrows=sample_size)
+    credit_card_data['AMT_DRAWINGS_ATM_CURRENT'][credit_card_data['AMT_DRAWINGS_ATM_CURRENT'] < 0] = np.nan
+    credit_card_data['AMT_DRAWINGS_CURRENT'][credit_card_data['AMT_DRAWINGS_CURRENT'] < 0] = np.nan
+
     encode_categoricals(credit_card_data)
 
     # Add features before aggregation.
@@ -155,6 +185,11 @@ def process_bureau(path_to_data='', sample_size=1000):
     # Load data and encode.
     bureau_data = pd.read_csv(path_to_data + 'bureau.csv', nrows=sample_size)
     bureau_balance_data = pd.read_csv(path_to_data + 'bureau_balance.csv', nrows=sample_size)
+
+    bureau_data['DAYS_CREDIT_ENDDATE'][bureau_data['DAYS_CREDIT_ENDDATE'] < -40000] = np.nan
+    bureau_data['DAYS_CREDIT_UPDATE'][bureau_data['DAYS_CREDIT_UPDATE'] < -40000] = np.nan
+    bureau_data['DAYS_ENDDATE_FACT'][bureau_data['DAYS_ENDDATE_FACT'] < -40000] = np.nan
+
     encode_categoricals(bureau_data)
     encode_categoricals(bureau_balance_data)
 
@@ -163,6 +198,10 @@ def process_bureau(path_to_data='', sample_size=1000):
     # For now it's okay. 
     bureau_data['CREDIT_RATIO'] = bureau_data.AMT_CREDIT_SUM / bureau_data.AMT_CREDIT_SUM_LIMIT
     bureau_data['OVERDUE_RATIO'] = bureau_data.AMT_CREDIT_SUM_OVERDUE / bureau_data.AMT_CREDIT_SUM_LIMIT
+
+    # Features from neptune-ml open solution.
+    bureau['bureau_credit_active_binary'] = (bureau['CREDIT_ACTIVE'] != 'Closed').astype(int)
+    bureau['bureau_credit_enddate_binary'] = (bureau['DAYS_CREDIT_ENDDATE'] > 0).astype(int)
 
     # Simple aggregations
     bureau_aggregated = bureau_data.groupby('SK_ID_CURR').aggregate(
