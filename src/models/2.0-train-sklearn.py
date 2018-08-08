@@ -40,7 +40,7 @@ def train():
 
     rf_params = {
         'n_jobs':-1,
-        'n_estimators':10
+        'n_estimators':100
     }
 
     et_params  = {}
