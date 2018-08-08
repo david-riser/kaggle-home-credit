@@ -5,3 +5,6 @@
 
 # Add files here produced by PyCharm
 .idea/* 
+
+# Files produced by notebooks 
+notebooks/.ipynb_checkpoints/* 
