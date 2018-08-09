@@ -43,46 +43,16 @@ def train():
         'n_estimators':100
     }
 
+    mlp_params = {
+        'hidden_layer_sizes':(128,3),
+        'activation':'sigmoid',
+        'solver':'adam'
+    }
+
     et_params  = {}
     nb_params = {}
 
     train, labels, test, train_ids, test_ids = utils.load_features(path_to_data, version, sample_size)
-
-    # Handle NaN values.
-    # This converts pandas.DataFrame to numpy.ndarray.
-
-    '''
-    imp = Imputer()
-    train_imp = imp.fit_transform(train)
-    test_imp = imp.transform(test)
-
-    if not np.isfinite(train_imp).all():
-        print('Training data contains bad values.')
-        print(train_imp[np.where(train_imp == np.inf)])
-        print(train_imp[np.where(train_imp == -np.inf)])
-        exit() 
-
-    if not np.isfinite(labels).all():
-        print('Training labels contains bad values.')
-        print(labels[np.where(labels == np.inf)])
-        print(labels[np.where(labels == -np.inf)])
-        exit() 
-
-    if not np.isfinite(test_imp).all():
-        print('Testing data contains bad values.')
-        print(test_imp[np.where(test_imp == np.inf)])
-        print(test_imp[np.where(test_imp == -np.inf)])
-        exit()
-
-    # Cast to pandas.dataframe for kfold method.
-    train_df = pd.DataFrame(train_imp)
-    test_df = pd.DataFrame(test_imp)
-    del train, test, train_imp, test_imp  
-
-    # Check format 
-    print('Summary of training nulls: ', train_df.isnull().sum().sum())
-    print('Summary of testing nulls: ', test_df.isnull().sum().sum())
-    '''
 
     train_df = train.fillna(0)
     train_df.replace(np.inf, 0, inplace=True)
@@ -91,7 +61,7 @@ def train():
     test_df = test.fillna(0)
     test_df.replace(np.inf, 0, inplace=True)
     test_df.replace(-np.inf, 0, inplace=True)
-
+    
     # ------------------------------------------------------------------------
     #    Start training models. 
     # ------------------------------------------------------------------------
