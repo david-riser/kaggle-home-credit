@@ -269,7 +269,7 @@ def build_features():
     # Constants for loading of data.
     # Placing None as the sample size
     # will run the complete dataset.
-    sample_size    = None
+    sample_size    = 50000
     path_to_data   = '../../data/raw/'
     path_to_output = '../../data/processed/'
 
@@ -317,6 +317,10 @@ def build_features():
     drop_cols = [col for col in missing.index if missing[col] > percentage_threshold]
     dataset.drop(columns=drop_cols, inplace=True)
     log.info('Dropped columns with no information %s', drop_cols)
+
+    # Print the types of columns that are still
+    # present in our dataset before moving on.
+    log.info('Column types: %s', dataset.dtypes.value_counts())
 
     # Save compressed testing and training set. 
     with timer('Writing training data'):

@@ -20,11 +20,13 @@ import logging
 import numpy as np
 import pandas as pd
 import time
+import warnings 
+warnings.filterwarnings('ignore')
 
 from contextlib import contextmanager
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__file__)
 
 # Taken from https://www.kaggle.com/jsaguiar/updated-0-792-lb-lightgbm-with-simple-features/code
@@ -49,7 +51,10 @@ def encode_categoricals(data):
     Take a dataframe and one hot encode all categorical 
     variables inplace. 
     '''
+    
+    log.debug('Shape before encoding %s', data.shape)
     data = pd.get_dummies(data)
+    log.debug('Shape after encoding %s', data.shape)
 
 def process_application(path_to_data='', sample_size=1000):
     '''
@@ -75,10 +80,10 @@ def process_application(path_to_data='', sample_size=1000):
     app['NAME_FAMILY_STATUS'].replace('Unknown', np.nan, inplace=True)
     app['ORGANIZATION_TYPE'].replace('XNA', np.nan, inplace=True)
 
-    # Perform label encoding on categorical variables.
+    # Perform encoding on categorical variables.
     encode_categoricals(app)
 
-    # Add features 
+    # Add my features 
     app['DAYS_EMPLOYED_PERCENT'] = app.DAYS_EMPLOYED / app.DAYS_BIRTH
     app['CREDIT_TERM'] = app.AMT_ANNUITY / app.AMT_CREDIT
     app['CREDIT_INCOME_PERCENT'] = app.AMT_CREDIT / app.AMT_INCOME_TOTAL
@@ -316,6 +321,14 @@ def build_features():
     drop_cols = [col for col in missing.index if missing[col] > percentage_threshold]
     dataset.drop(columns=drop_cols, inplace=True)
     log.info('Dropped columns with no information %s', drop_cols)
+
+    # Print the types of columns that are still 
+    # present in our dataset before moving on. 
+    log.info('Column types: %s', dataset.dtypes.value_counts())
+    log.debug('Object cols: %s', dataset.select_dtypes('object').columns)
+    dataset = pd.get_dummies(dataset)
+    log.info('Column types: %s', dataset.dtypes.value_counts())
+    log.debug('Object cols: %s', dataset.select_dtypes('object').columns)
 
     # Save compressed testing and training set. 
     with timer('Writing training data'):
