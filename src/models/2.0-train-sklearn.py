@@ -14,6 +14,7 @@ import utils
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import Imputer
 
 class SklearnWrapper(object):
@@ -33,7 +34,7 @@ def train():
     path_to_output = '../../data/submissions/'
     path_to_preds  = '../../data/predictions/'
 
-    version = '1.2'
+    version = '1.3'
     random_seed = 8675309
     sample_size = None
     n_folds = 5
@@ -43,10 +44,8 @@ def train():
         'n_estimators':100
     }
 
-    mlp_params = {
-        'hidden_layer_sizes':(128,3),
-        'activation':'sigmoid',
-        'solver':'adam'
+    lr_params = {
+        'C':0.001
     }
 
     et_params  = {}
@@ -124,6 +123,25 @@ def train():
 
     df_oof_train.to_csv(path_to_preds + version + '-naive-bayes.csv', index=False)
     df_oof_test.to_csv(path_to_output + version + '-naive-bayes.csv', index=False)
+
+    # Logistic Regression 
+    oof_train, oof_test = utils.kfold(classifier_builder=SklearnWrapper,
+                                      base_classifier=LogisticRegression,
+                                      classifier_params=lr_params,
+                                      train=train_df,
+                                      labels=labels,
+                                      test=test_df,
+                                      n_folds=n_folds,
+                                      random_seed=random_seed)
+
+    df_oof_train = pd.DataFrame({'SK_ID_CURR':train_ids, 'TARGET':labels, 'logistic-regression':oof_train})
+    df_oof_train['SK_ID_CURR'] = df_oof_train['SK_ID_CURR'].astype('int32')
+
+    df_oof_test = pd.DataFrame({'SK_ID_CURR':test_ids, 'TARGET':oof_test})
+    df_oof_test['SK_ID_CURR'] = df_oof_test['SK_ID_CURR'].astype('int32')
+
+    df_oof_train.to_csv(path_to_preds + version + '-logistic-regression.csv', index=False)
+    df_oof_test.to_csv(path_to_output + version + '-logistic-regression.csv', index=False)
 
 
 if __name__ == '__main__':
