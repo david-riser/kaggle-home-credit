@@ -69,13 +69,13 @@ def stack():
     path_to_test   = '../../data/submissions/'
     path_to_output = '../../data/submissions/'
     path_to_train  = '../../data/predictions/'
-    version        = '1.2'
+    version        = '1.3'
     SEED           = 8675309
 
     train = {}
     test  = {}
 
-    models = ['xgboost', 'lightgbm', 'extra-trees', 'random-forest', 'naive-bayes']
+    models = ['xgboost', 'lightgbm', 'extra-trees', 'random-forest', 'naive-bayes', 'logisitc-regression']
     for model in models:
         train[model], test[model] = load_model_data(path_to_train,
                                                     path_to_test,
