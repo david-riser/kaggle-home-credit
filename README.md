@@ -9,3 +9,12 @@ This educational project uses data provided by the Kaggle challenge hosted [here
 - Tree based classifiers (RandomForestClassifier, LightGBM, XGBoost)
 - Cross validation
 - Ensembling/Stacking of models 
+
+### Changelog
+
+|  Feature Version  | Model    | LB Score | Notes                   |
+---------------------------------------------------------------------
+|       1.0         | LightGBM |   0.792  |                         |
+|       1.1         | LightGBM |   0.795  |                         |
+|       1.2         | LightGBM |   0.799  |                         |
+|       1.3         | LightGBM |   0.797  | Switched to OHE from LE |
