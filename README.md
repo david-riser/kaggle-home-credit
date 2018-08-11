@@ -13,7 +13,7 @@ This educational project uses data provided by the Kaggle challenge hosted [here
 ### Changelog
 
 |  Feature Version  | Model    | LB Score | Notes                   |
----------------------------------------------------------------------
+|-------------------|----------|----------|-------------------------|
 |       1.0         | LightGBM |   0.792  |                         |
 |       1.1         | LightGBM |   0.795  |                         |
 |       1.2         | LightGBM |   0.799  |                         |
