@@ -1,26 +1,24 @@
 #
-# 1.3-build-features.py
+# 1.4-build-features.py
 # Author: David Riser
-# Date: Aug. 9, 2018
+# Date: Aug. 11, 2018
 #
 # Template for aggregating data from all tables provided
 # as part of this kaggle challenge, and saving the processed
 # data into data/processed/.
 #
-# I also change label encoding to one hot 
-# encoding because I don't think many of 
-# the categorical features are ordinal.
-# Ideally, I would choose the encoding for 
-# each by hand.
+# In this version I am returning to label
+# encoding, and applying partial aggs.
 
 import logging
 import numpy as np
 import pandas as pd
 import time
-import warnings 
+import warnings
 warnings.filterwarnings('ignore')
 
 from contextlib import contextmanager
+from sklearn.preprocessing import LabelEncoder
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
@@ -45,13 +43,61 @@ def rename_column(table_name, variable, aggregation):
 
 def encode_categoricals(data):
     '''
-    Take a dataframe and one hot encode all categorical 
+    Take a dataframe and label encode all categorical 
     variables inplace. 
     '''
-    
-    log.debug('Shape before encoding %s', data.shape)
-    data = pd.get_dummies(data)
-    log.debug('Shape after encoding %s', data.shape)
+    cat_cols = data.select_dtypes('object').columns
+    for cat in cat_cols:
+        encoder = LabelEncoder()
+        data[cat] = encoder.fit_transform(data[cat])
+
+def aggregate_over_k(data, agg_func, k):
+    ''' We're going to take the data and apply an aggregation 
+    to the just the last k installments. 
+    '''
+    return agg_func(data[:k])
+
+def min_max_diff(data):
+    return (data.max()-data.min())
+
+# This is a block of aggregation functions.  Perhaps there
+# is a better way to do this.  Creating lambdas doesn't work
+# because the name is the same.
+def mean_over_6(data):
+    return aggregate_over_k(data, np.mean, 6)
+
+def mean_over_12(data):
+    return aggregate_over_k(data, np.mean, 12)
+
+def mean_over_18(data):
+    return aggregate_over_k(data, np.mean, 18)
+
+def mean_over_24(data):
+    return aggregate_over_k(data, np.mean, 24)
+
+def std_over_6(data):
+    return aggregate_over_k(data, np.std, 6)
+
+def std_over_12(data):
+    return aggregate_over_k(data, np.std, 12)
+
+def std_over_18(data):
+    return aggregate_over_k(data, np.std, 18)
+
+def std_over_24(data):
+    return aggregate_over_k(data, np.std, 24)
+
+def mmd_over_6(data):
+    return aggregate_over_k(data, min_max_diff, 6)
+
+def mmd_over_12(data):
+    return aggregate_over_k(data, min_max_diff, 12)
+
+def mmd_over_18(data):
+    return aggregate_over_k(data, min_max_diff, 18)
+
+def mmd_over_24(data):
+    return aggregate_over_k(data, min_max_diff, 24)
 
 def process_application(path_to_data='', sample_size=1000):
     '''
@@ -77,10 +123,10 @@ def process_application(path_to_data='', sample_size=1000):
     app['NAME_FAMILY_STATUS'].replace('Unknown', np.nan, inplace=True)
     app['ORGANIZATION_TYPE'].replace('XNA', np.nan, inplace=True)
 
-    # Perform encoding on categorical variables.
+    # Perform label encoding on categorical variables.
     encode_categoricals(app)
 
-    # Add my features 
+    # Add features 
     app['DAYS_EMPLOYED_PERCENT'] = app.DAYS_EMPLOYED / app.DAYS_BIRTH
     app['CREDIT_TERM'] = app.AMT_ANNUITY / app.AMT_CREDIT
     app['CREDIT_INCOME_PERCENT'] = app.AMT_CREDIT / app.AMT_INCOME_TOTAL
@@ -152,7 +198,6 @@ def process_creditcard(path_to_data='', sample_size=1000):
     credit_card_data = pd.read_csv(path_to_data + 'credit_card_balance.csv', nrows=sample_size)
     credit_card_data['AMT_DRAWINGS_ATM_CURRENT'][credit_card_data['AMT_DRAWINGS_ATM_CURRENT'] < 0] = np.nan
     credit_card_data['AMT_DRAWINGS_CURRENT'][credit_card_data['AMT_DRAWINGS_CURRENT'] < 0] = np.nan
-
     encode_categoricals(credit_card_data)
 
     # Add features before aggregation.
@@ -174,6 +219,23 @@ def process_creditcard(path_to_data='', sample_size=1000):
 
     # Add the number of payments for this customer.
     credit_card_aggregated['CREDIT_CARD_COUNT'] = credit_card_data.groupby('SK_ID_CURR').size()
+
+    # Perform partial aggregations 
+    partial_aggregation_functions = [mean_over_6, mean_over_12, mean_over_18, mean_over_24,
+                                     std_over_6, std_over_12, std_over_18, std_over_24,
+                                     mmd_over_6, mmd_over_12, mmd_over_18, mmd_over_24
+    ]
+    partial_aggregations = {
+        'AMT_BALANCE':partial_aggregation_functions,
+        'BALANCE_PERCENT':partial_aggregation_functions,
+        'SK_DPD':partial_aggregation_functions
+    }
+    credit_card_partially_aggregated = credit_card_data.sort_values(
+        ['SK_ID_CURR', 'MONTHS_BALANCE']).groupby('SK_ID_CURR').agg(partial_aggregations)
+    credit_card_partially_aggregated.columns = [rename_column('CREDIT_CARD', col[0], col[1])
+                                  for col in list(credit_card_partially_aggregated.columns)]
+    
+    credit_card_aggregated = credit_card_aggregated.join(credit_card_partially_aggregated, how='left', on='SK_ID_CURR')
     log.debug('Aggregated credit card dataframe has columns %s', credit_card_aggregated.columns)
 
     return credit_card_aggregated
@@ -226,7 +288,7 @@ def process_cash(path_to_data='', sample_size=1000):
 
     cash_data = pd.read_csv(path_to_data + 'POS_CASH_balance.csv', nrows=sample_size)
     encode_categoricals(cash_data)
-
+    
     # Add features here, then aggregate.
     cash_aggregated = cash_data.groupby('SK_ID_CURR').aggregate(
         ['min', 'max', 'mean', 'var']
@@ -235,6 +297,24 @@ def process_cash(path_to_data='', sample_size=1000):
     # Fix naming
     cash_aggregated.columns = [rename_column('CASH', col[0], col[1])
                                  for col in list(cash_aggregated.columns)]
+
+    # Perform partial aggregations 
+    partial_aggregation_functions = [mean_over_6, mean_over_12, mean_over_18, mean_over_24,
+                                     std_over_6, std_over_12, std_over_18, std_over_24,
+                                     mmd_over_6, mmd_over_12, mmd_over_18, mmd_over_24
+    ]
+    partial_aggregations = {
+        'SK_DPD':partial_aggregation_functions,
+        'SK_DPD_DEF':partial_aggregation_functions
+    }
+    cash_partially_aggregated = cash_data.sort_values(
+        ['SK_ID_CURR', 'MONTHS_BALANCE']).groupby('SK_ID_CURR').agg(partial_aggregations)
+    cash_partially_aggregated.columns = [rename_column('CASH', col[0], col[1])
+                                  for col in list(cash_partially_aggregated.columns)]
+    
+    cash_aggregated = cash_aggregated.join(cash_partially_aggregated, how='left', on='SK_ID_CURR')
+    
+
     log.debug('Aggregated cash dataframe has columns %s', cash_aggregated.columns)
     return cash_aggregated
 
@@ -319,23 +399,19 @@ def build_features():
     dataset.drop(columns=drop_cols, inplace=True)
     log.info('Dropped columns with no information %s', drop_cols)
 
-    # Print the types of columns that are still 
-    # present in our dataset before moving on. 
+    # Print the types of columns that are still
+    # present in our dataset before moving on.
     log.info('Column types: %s', dataset.dtypes.value_counts())
-    log.debug('Object cols: %s', dataset.select_dtypes('object').columns)
-    dataset = pd.get_dummies(dataset)
-    log.info('Column types: %s', dataset.dtypes.value_counts())
-    log.debug('Object cols: %s', dataset.select_dtypes('object').columns)
 
     # Save compressed testing and training set. 
     with timer('Writing training data'):
         train = dataset.loc[dataset.test == 0]
-        train.to_csv(path_to_output + '1.3-features-train.csv', compression='gzip')
+        train.to_csv(path_to_output + '1.4-features-train.csv', compression='gzip')
 
     with timer('Writing testing data'):
         test = dataset.loc[dataset.test == 1]
         test.drop(columns=['TARGET'], inplace=True)
-        test.to_csv(path_to_output + '1.3-features-test.csv', compression='gzip')
+        test.to_csv(path_to_output + '1.4-features-test.csv', compression='gzip')
 
 if __name__ == '__main__':
     build_features()
