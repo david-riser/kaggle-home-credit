@@ -16,13 +16,12 @@ import time
 from contextlib import contextmanager
 from sklearn.preprocessing import LabelEncoder
 
-# Taken from https://www.kaggle.com/jsaguiar/updated-0-792-lb-lightgbm-with-simple-features/code
-# and modified to log instead of print. 
-
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__file__)
 
+# Taken from https://www.kaggle.com/jsaguiar/updated-0-792-lb-lightgbm-with-simple-features/code
+# and modified to log instead of print. 
 @contextmanager
 def timer(title):
     t0 = time.time()
@@ -222,8 +221,6 @@ def process_previous(path_to_data='', sample_size=1000):
     log.debug('Aggregated previous dataframe has columns %s', previous_aggregated.columns)
     return previous_aggregated
 
-
-###################################################
 def build_features():
 
     # Constants for loading of data.
